@@ -1,19 +1,33 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { ThemeProvider } from '@rneui/themed';
+import { storage } from './src/storage/storage';
+
+import Cadastro from './src/screens/Cadastro';
+import Confirmacao from './src/screens/Confirmacao';
 
 export default function App() {
+  // Lê o MMKV ao iniciar de forma síncrona. Se tiver dado, inicia na Confirmação.
+  const cadastroSalvo = storage.getString('cadastro');
+  const [telaAtual, setTelaAtual] = useState(cadastroSalvo ? 'confirmacao' : 'cadastro');
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <ThemeProvider>
+      <View style={styles.container}>
+        {telaAtual === 'cadastro' ? (
+          <Cadastro onCadastrado={() => setTelaAtual('confirmacao')} />
+        ) : (
+          <Confirmacao onNovoCadastro={() => setTelaAtual('cadastro')} />
+        )}
+      </View>
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },

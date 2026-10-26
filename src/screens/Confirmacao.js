@@ -1,117 +1,69 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Input, Button } from '@rneui/themed'; // Removido o import do Icon
+import { Text, Button, Card, Avatar, ListItem, Divider } from '@rneui/themed';
 import { storage } from '../storage/storage';
 
-export default function Cadastro({ onCadastrado }) {
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [senha, setSenha] = useState('');
-  
-  // Objeto de estado para guardar os erros de cada campo
-  const [erros, setErros] = useState({});
+export default function Confirmacao({ onNovoCadastro }) {
+  // Lê os dados direto do MMKV de forma síncrona
+  const dadosSalvos = storage.getString('cadastro');
+  const usuario = dadosSalvos ? JSON.parse(dadosSalvos) : {};
 
-  const validarEGravar = () => {
-    let errosAtuais = {};
-    let formValido = true;
-
-    // Validação de Nome
-    if (!nome.trim()) {
-      errosAtuais.nome = 'O nome não pode ficar vazio.';
-      formValido = false;
-    }
-
-    // Validação de E-mail (formato básico)
-    const emailRegex = /\S+@\S+\.\S+/;
-    if (!email.trim()) {
-      errosAtuais.email = 'O e-mail não pode ficar vazio.';
-      formValido = false;
-    } else if (!emailRegex.test(email)) {
-      errosAtuais.email = 'Informe um e-mail válido.';
-      formValido = false;
-    }
-
-    // Validação de Telefone (remove tudo que não for número e conta)
-    const apenasNumeros = telefone.replace(/\D/g, '');
-    if (!telefone.trim()) {
-      errosAtuais.telefone = 'O telefone não pode ficar vazio.';
-      formValido = false;
-    } else if (apenasNumeros.length < 10) {
-      errosAtuais.telefone = 'Informe um telefone válido (mínimo 10 dígitos).';
-      formValido = false;
-    }
-
-    // Validação de Senha
-    if (!senha) {
-      errosAtuais.senha = 'A senha não pode ficar vazia.';
-      formValido = false;
-    } else if (senha.length < 6) {
-      errosAtuais.senha = 'A senha deve ter pelo menos 6 caracteres.';
-      formValido = false;
-    }
-
-    setErros(errosAtuais);
-
-    // Se estiver tudo certo, salva no MMKV
-    if (formValido) {
-      const dadosCadastro = {
-        id: Date.now().toString(),
-        dataCadastro: new Date().toLocaleDateString(),
-        nome,
-        email,
-        telefone,
-        senha
-      };
-
-      storage.set('cadastro', JSON.stringify(dadosCadastro));
-      onCadastrado(); // Avisa o App.js para trocar de tela
-    }
+  // Função para pegar as iniciais do nome para colocar no Avatar
+  const getIniciais = (nomeCompleto) => {
+    if (!nomeCompleto) return 'U';
+    const partes = nomeCompleto.trim().split(' ');
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text h3 style={styles.titulo}>Cadastro</Text>
+      <Text h4 style={styles.mensagemSucesso}>Cadastro realizado!</Text>
+      
+      <Card containerStyle={styles.cartao}>
+        <Card.Title>Dados cadastrados</Card.Title>
+        <Card.Divider />
+        
+        <View style={styles.avatarContainer}>
+          <Avatar
+            size={80}
+            rounded
+            title={getIniciais(usuario.nome)}
+            containerStyle={{ backgroundColor: '#2089dc' }}
+          />
+          <Text h4 style={styles.nome}>{usuario.nome}</Text>
+        </View>
 
-        <Input
-          placeholder="Digite seu nome"
-          value={nome}
-          onChangeText={setNome}
-          errorMessage={erros.nome}
-        />
+        <Divider style={styles.divisor} />
 
-        <Input
-          placeholder="Digite seu e-mail"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          errorMessage={erros.email}
-        />
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Subtitle>E-mail</ListItem.Subtitle>
+            <ListItem.Title>{usuario.email}</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
 
-        <Input
-          placeholder="Digite seu telefone"
-          value={telefone}
-          onChangeText={setTelefone}
-          keyboardType="phone-pad"
-          errorMessage={erros.telefone}
-        />
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Subtitle>Telefone</ListItem.Subtitle>
+            <ListItem.Title>{usuario.telefone}</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
 
-        <Input
-          placeholder="Digite sua senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-          errorMessage={erros.senha}
-        />
+        <ListItem>
+          <ListItem.Content>
+            <ListItem.Subtitle>Data do Cadastro</ListItem.Subtitle>
+            <ListItem.Title>{usuario.dataCadastro}</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      </Card>
 
-        <Button
-          title="CADASTRAR"
-          buttonStyle={styles.botao}
-          onPress={validarEGravar}
-        />
-      </View>
+      <Button
+        title="NOVO CADASTRO"
+        type="outline"
+        buttonStyle={styles.botao}
+        onPress={onNovoCadastro}
+      />
     </ScrollView>
   );
 }
@@ -125,23 +77,29 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     alignSelf: 'center',
   },
-  card: {
-    backgroundColor: '#ffffff',
-    padding: 24,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  titulo: {
+  mensagemSucesso: {
     textAlign: 'center',
+    color: '#28a745',
+    marginBottom: 16,
+  },
+  cartao: {
+    borderRadius: 12,
+    marginHorizontal: 0,
     marginBottom: 24,
-    color: '#2089dc',
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  nome: {
+    marginTop: 12,
+    color: '#333',
+  },
+  divisor: {
+    marginBottom: 16,
   },
   botao: {
-    marginTop: 16,
+    borderWidth: 2,
     borderRadius: 8,
     paddingVertical: 12,
   },
